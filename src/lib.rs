@@ -45,12 +45,12 @@
 //! First:
 //!
 //! ```text
-//! cargo install --force --git https://github.com/kianenigma/pba-omni-node
+//! cargo install --force --locked --git https://github.com/Polkadot-Blockchain-Academy/pba-omni-node
 //! ```
 //!
 //! Then, you can run:
 //!
-//! ```text
+//! ```bash
 //! # build the wasm runtime, possibly with log targets.
 //! RUST_LOG=frameless=info cargo build --release
 //! # pass it to the node
@@ -102,7 +102,7 @@
 //!
 //! Let's quickly explore how the chian-spec builder works:
 //!
-//! * The chain spec is a JSON file describing what the the initial specification of the chain is.
+//! * The chain spec is a JSON file describing what the initial specification of the chain is.
 //! * It is an important feature of the omni-node-driven future of Polkadot.
 //! * It contains many important pieces of information, but notable the genesis state, which we call
 //!   `GenesisConfig`.
@@ -194,12 +194,7 @@ use log::info;
 use parity_scale_codec::{Compact, Decode, Encode};
 use sp_api::impl_runtime_apis;
 use sp_core::{hexdisplay::HexDisplay, OpaqueMetadata, H256};
-use sp_runtime::{
-	create_runtime_str, generic,
-	traits::{BlakeTwo256, Block as BlockT, Hash},
-	transaction_validity::{TransactionSource, TransactionValidity, ValidTransactionBuilder},
-	ApplyExtrinsicResult, ExtrinsicInclusionMode,
-};
+use sp_runtime::{create_runtime_str, generic, traits::{BlakeTwo256, Block as BlockT, Hash}, transaction_validity::{TransactionSource, TransactionValidity, ValidTransactionBuilder}, ApplyExtrinsicResult, DispatchError, ExtrinsicInclusionMode};
 use sp_version::RuntimeVersion;
 
 /// The key to which [`Call::SetValue`] will write the value.
@@ -232,6 +227,35 @@ type AccountId = sp_core::sr25519::Public;
 enum Call {
 	SetValue { value: u32 },
 	UpgradeCode { code: Vec<u8> },
+	Balance(BalanceCall),
+	Vote(VoteCall),
+}
+
+#[derive(
+	Debug, Encode, Decode, TypeInfo, Clone, PartialEq, Eq, serde::Serialize, serde::Deserialize,
+)]
+enum BalanceCall {
+	Mint { dest: u32, amount: u32 },
+	Transfer { src: u32, dest: u32, amount: u32 },
+}
+
+fn balance_map_key(key: u32) -> Vec<u8> {
+	let mut final_key = b"BalancesMap".to_vec();
+	final_key.extend(key.encode());
+	final_key
+}
+
+#[derive(
+	Debug, Encode, Decode, TypeInfo, Clone, PartialEq, Eq, serde::Serialize, serde::Deserialize,
+)]
+enum VoteCall {
+	Vote { src: u32, amount: u32 },
+}
+
+fn vote_map_key(key: u32) -> Vec<u8> {
+	let mut final_key = b"VoteMap".to_vec();
+	final_key.extend(key.encode());
+	final_key
 }
 
 #[derive(TypeInfo, Clone, PartialEq, Eq, Debug, serde::Serialize, serde::Deserialize)]
@@ -344,8 +368,7 @@ struct RuntimeGenesis {
 	pub(crate) value: u32,
 }
 
-// This impl block contains the core runtime api implementations. It contains good starting points
-// denoted as a `FIXME`.
+// This impl block contains the core runtime api implementations.
 impl Runtime {
 	pub(crate) fn do_initialize_block(
 		header: &<Block as BlockT>::Header,
@@ -380,8 +403,45 @@ impl Runtime {
 	/// Apply a single extrinsic.
 	///
 	/// In our template, we call into this from both block authoring, and block import.
+	///
+	// Note: This is a simple implementation. A full implementation would do the following:
+	// - verify signer (ensure payload signature is valid)
+	// - pre-dispatch (fees, nonce check etc.)
+	// - dispatch to Call
+	// - note extrinsic
 	pub(crate) fn do_apply_extrinsic(ext: <Block as BlockT>::Extrinsic) -> ApplyExtrinsicResult {
+
 		let dispatch_outcome = match ext.clone().function {
+			// FIXME-01: Implement `Call::SetValue`
+			Call::SetValue { value } => {
+				sp_io::storage::set(VALUE_KEY, &value.encode());
+				Ok(())
+			},
+
+			Call::Balance(BalanceCall::Mint {dest, amount}) => {
+				Self::mutate_state::<u32>(&balance_map_key(dest), |x| {
+					*x = *x + amount
+				});
+				Ok(())
+			},
+
+			Call::Balance(BalanceCall::Transfer {src, dest, amount}) => {
+				let src_balance = Self::get_state::<u32>(&balance_map_key(src)).unwrap_or_default();
+				if src_balance < amount {
+					Err(DispatchError::Other("not enough funds"))
+				} else {
+
+				Self::mutate_state::<u32>(&balance_map_key(src), |x| {
+					*x = *x - amount
+				});
+				Self::mutate_state::<u32>(&balance_map_key(dest), |x| {
+					*x = *x + amount
+				});
+
+				Ok(())
+				}
+			}
+
 			_ => Ok(()),
 		};
 
@@ -490,6 +550,7 @@ impl_runtime_apis! {
 			Self::do_execute_block(block)
 		}
 
+		/// Start execution of the block
 		fn initialize_block(header: &<Block as BlockT>::Header) -> sp_runtime::ExtrinsicInclusionMode {
 			info!(
 				target: LOG_TARGET,
@@ -685,7 +746,7 @@ mod tests {
 
 	#[test]
 	fn does_it_print() {
-		// runt this with `cargo test does_it_print -- --nocapture`. Or if the test fails it will
+		// run this with `cargo test does_it_print -- --nocapture`. Or if the test fails it will
 		// also print.
 		//
 		// Note that WASM cannot print using `println!`! This can only be used in `cargo
@@ -728,6 +789,7 @@ mod tests {
 	}
 
 	#[test]
+	// FIXME-01: Implement `Call::SetValue`.
 	fn import_and_author_equal() {
 		// a few dummy extrinsics. The last one won't even pass predispatch, so it won't be
 		// noted.
@@ -755,5 +817,50 @@ mod tests {
 		let _decoded_as_ext = <SignedExtrinsic as Decode>::decode(&mut &*encoded).unwrap();
 		let _decoded_as_opaque =
 			<sp_runtime::OpaqueExtrinsic as Decode>::decode(&mut &*encoded).unwrap();
+	}
+
+	#[test]
+	fn mint_balance_works() {
+		let mut state = TestExternalities::new_empty();
+
+		let ext = SignedExtrinsic::new(Call::Balance(BalanceCall::Mint {dest: 100, amount: 1000}), None).unwrap();
+		state.execute_with(|| assert_eq!(Runtime::get_state::<u32>(&balance_map_key(100)), None));
+
+		let block = author_block(vec![ext], &mut state);
+		state.execute_with(|| assert_eq!(Runtime::get_state::<u32>(&balance_map_key(100)), Some(1000)));
+	}
+
+	#[test]
+	fn transfer_balance_works() {
+		let mut state = TestExternalities::new_empty();
+		let alice = 100;
+		let bob = 200;
+
+		// mint 1000 to `alice`
+		let ext1 = SignedExtrinsic::new(Call::Balance(BalanceCall::Mint {dest: alice, amount: 1000}), None).unwrap();
+		// transfer 300 to `bob`
+		let ext2 = SignedExtrinsic::new(Call::Balance(BalanceCall::Transfer {src: alice, dest: bob, amount: 300}), None).unwrap();
+
+		state.execute_with(|| {
+			assert_eq!(Runtime::get_state::<u32>(&balance_map_key(alice)), None);
+			assert_eq!(Runtime::get_state::<u32>(&balance_map_key(bob)), None);
+		});
+
+		let block = author_block(vec![ext1], &mut state);
+		state.execute_with(|| {
+			// alice gets 1000 minted to her.
+			assert_eq!(Runtime::get_state::<u32>(&balance_map_key(alice)), Some(1000));
+			// Bob still has none
+			assert_eq!(Runtime::get_state::<u32>(&balance_map_key(bob)), None);
+		});
+
+		// transfer in the next block
+		let block = author_block(vec![ext2], &mut state);
+		state.execute_with(|| {
+			// alice has now 1000-300 =  700.
+			assert_eq!(Runtime::get_state::<u32>(&balance_map_key(alice)), Some(700));
+			// Bob has 300
+			assert_eq!(Runtime::get_state::<u32>(&balance_map_key(bob)), Some(300));
+		});
 	}
 }
