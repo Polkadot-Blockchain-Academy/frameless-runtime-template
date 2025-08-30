@@ -252,6 +252,7 @@ enum VoteCall {
 	Vote { src: u32, amount: u32 },
 }
 
+#[allow(unused)]
 fn vote_map_key(key: u32) -> Vec<u8> {
 	let mut final_key = b"VoteMap".to_vec();
 	final_key.extend(key.encode());
