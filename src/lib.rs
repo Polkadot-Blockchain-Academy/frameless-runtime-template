@@ -362,7 +362,7 @@ impl Runtime {
 	}
 }
 
-/// A struct that defines the the genesis configuration of the runtime.
+/// A struct that defines the genesis configuration of the runtime.
 #[derive(Debug, Clone, PartialEq, Eq, serde::Serialize, serde::Deserialize)]
 struct RuntimeGenesis {
 	pub(crate) value: u32,
@@ -789,7 +789,7 @@ mod tests {
 	}
 
 	#[test]
-	// FIXME-01: Implement `Call::SetValue`.
+	// FIXME-01: Implementing `Call::SetValue` correctly will make the test pass.
 	fn import_and_author_equal() {
 		// a few dummy extrinsics. The last one won't even pass predispatch, so it won't be
 		// noted.
@@ -821,32 +821,46 @@ mod tests {
 
 	#[test]
 	fn mint_balance_works() {
+		// FIXME-02: Uncomment after implementing `BalanceCall::Mint`.
 		let mut state = TestExternalities::new_empty();
+		let alice = 100;
 
-		let ext = SignedExtrinsic::new(Call::Balance(BalanceCall::Mint {dest: 100, amount: 1000}), None).unwrap();
-		state.execute_with(|| assert_eq!(Runtime::get_state::<u32>(&balance_map_key(100)), None));
+		let ext = SignedExtrinsic::new(Call::Balance(BalanceCall::Mint {dest: alice, amount: 1000}), None).unwrap();
+		state.execute_with(|| assert_eq!(Runtime::get_state::<u32>(&balance_map_key(alice)), None));
 
-		let block = author_block(vec![ext], &mut state);
-		state.execute_with(|| assert_eq!(Runtime::get_state::<u32>(&balance_map_key(100)), Some(1000)));
+		// include extrinsic
+		let _block = author_block(vec![ext], &mut state);
+		state.execute_with(|| assert_eq!(Runtime::get_state::<u32>(&balance_map_key(alice)), Some(1000)));
 	}
+
+
 
 	#[test]
 	fn transfer_balance_works() {
+		// FIXME-03: Uncomment after implementing `BalanceCall::Transfer`.
 		let mut state = TestExternalities::new_empty();
 		let alice = 100;
 		let bob = 200;
 
 		// mint 1000 to `alice`
-		let ext1 = SignedExtrinsic::new(Call::Balance(BalanceCall::Mint {dest: alice, amount: 1000}), None).unwrap();
+		let ext1 = SignedExtrinsic::new(
+			Call::Balance(BalanceCall::Mint { dest: alice, amount: 1000 }),
+			None,
+		)
+		.unwrap();
 		// transfer 300 to `bob`
-		let ext2 = SignedExtrinsic::new(Call::Balance(BalanceCall::Transfer {src: alice, dest: bob, amount: 300}), None).unwrap();
+		let ext2 = SignedExtrinsic::new(
+			Call::Balance(BalanceCall::Transfer { src: alice, dest: bob, amount: 300 }),
+			None,
+		)
+		.unwrap();
 
 		state.execute_with(|| {
 			assert_eq!(Runtime::get_state::<u32>(&balance_map_key(alice)), None);
 			assert_eq!(Runtime::get_state::<u32>(&balance_map_key(bob)), None);
 		});
 
-		let block = author_block(vec![ext1], &mut state);
+		let _block = author_block(vec![ext1], &mut state);
 		state.execute_with(|| {
 			// alice gets 1000 minted to her.
 			assert_eq!(Runtime::get_state::<u32>(&balance_map_key(alice)), Some(1000));
@@ -855,7 +869,7 @@ mod tests {
 		});
 
 		// transfer in the next block
-		let block = author_block(vec![ext2], &mut state);
+		let _block = author_block(vec![ext2], &mut state);
 		state.execute_with(|| {
 			// alice has now 1000-300 =  700.
 			assert_eq!(Runtime::get_state::<u32>(&balance_map_key(alice)), Some(700));
