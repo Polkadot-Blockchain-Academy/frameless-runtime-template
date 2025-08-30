@@ -777,7 +777,7 @@ mod tests {
 		// demonstrate some basic encodings. Example usage:
 		//
 		// ```
-		// wscat -c ws://127.0.0.1:9944 -x '{"jsonrpc":"2.0", "id":1, "method":"author_submitExtrinsic", "params": ["0x123"]}'
+		// wscat -c ws://127.0.0.1:9944 -x '{"jsonrpc":"2.0", "id":1, "method":"author_submitExtrinsic", "params": ["0x1800d204000000"]}'
 		// ```
 		let call = Call::SetValue { value: 1234 };
 		let unsigned_ext = SignedExtrinsic::new(call, None).unwrap();
