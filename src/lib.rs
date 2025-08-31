@@ -55,12 +55,13 @@
 //! RUST_LOG=frameless=info cargo build --release
 //! # pass it to the node
 //! RUST_LOG=frameless=debug
+//! # Run the node with:
+//! # - runtime - set to the compiled wasm
+//! # - tmp - ensures we spin up a new database each time
+//! # - consensus - tweak the blocktime, if you want.
 //! pba-omni-node \
-//! 	# the path to the runtime.
 //! 	--runtime ./target/release/wbuild/runtime/runtime.wasm \
-//! 	# ensures we spin up a new database each time.
 //! 	--tmp \
-//! 	# tweak the blocktime, if you want.
 //! 	--consensus manual-seal-1000
 //! ```
 //!
@@ -68,7 +69,7 @@
 //! now:
 //!
 //! ```text
-//! wscat -c 127.0.0.1:9944 -x '{"jsonrpc":"2.0", "id":1, "method":"state_getStorage", "params": ["76616c7565"] }`
+//! wscat -c 127.0.0.1:9944 -x '{"jsonrpc":"2.0", "id":1, "method":"state_getStorage", "params": ["76616c7565"] }'
 //! ```
 //!
 //! Or equivalently:
@@ -80,7 +81,7 @@
 //! Can you guess what is this?
 //!
 //! ```text
-//! wscat -c 127.0.0.1:9944 -x '{"jsonrpc":"2.0", "id":1, "method":"state_getStorage", "params": ["3a636f6465"] }
+//! wscat -c 127.0.0.1:9944 -x '{"jsonrpc":"2.0", "id":1, "method":"state_getStorage", "params": ["3a636f6465"] }'
 //! ```
 //!
 //! If you want to try submitting a transaction, you can use the following:
