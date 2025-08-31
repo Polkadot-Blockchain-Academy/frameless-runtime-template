@@ -72,6 +72,10 @@
 //! ```bash
 //! # pass it to the node
 //! RUST_LOG=frameless=debug
+//! # Run the node with:
+//! # - chain - set to the chain-spec we generated
+//! # - dev-block-time - sets the block time to 6 seconds
+//! # - tmp - ensures we spin up a new database each time
 //! polkadot-omni-node \
 //! 	--chain ./chain_spec.json \
 //! 	--dev-block-time 6000 \
