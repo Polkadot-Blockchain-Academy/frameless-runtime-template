@@ -37,6 +37,8 @@
 //!
 //! 1. Add a mapping of account-ids and balances, and implement a simple transfer function.
 //! 2. Add proper signature verification to the extrinsics.
+//! 3. Vibe code a simple UI for your substrate-based chain, showing the balance of different
+//!    accounts.
 //!
 //! ## How to Run
 //!
@@ -53,7 +55,7 @@
 //!
 //! ```bash
 //! # build the wasm runtime, possibly with log targets.
-//! RUST_LOG=frameless=info cargo build --release
+//! cargo build --release
 //! ```
 //!
 //! Then create a chain-spec using the Wasm runtime:
@@ -247,14 +249,25 @@ type Signature = sp_core::sr25519::Signature;
 /// be aware of using the right crypto type when using `sp_keyring` and similar crates.
 type AccountId = sp_core::sr25519::Public;
 
+/// Different calls that we may send to the runtime and dispatch.
+///
+/// Analoguous to "transactions".
 #[derive(
 	Debug, Encode, Decode, TypeInfo, Clone, PartialEq, Eq, serde::Serialize, serde::Deserialize,
 )]
 enum Call {
+	/// Set the value under [`VALUE_KEY`]
 	SetValue { value: u32 },
+	/// Upgrade the code of the runtime
 	UpgradeCode { code: Vec<u8> },
+	/// FIXME: Placeholder for interactions related to balances -- populate with an inner enum with
+	/// different balance related calls.
+	Balances(()),
 }
 
+/// The outer extrinsic type.
+///
+/// It wraps a function, a [`Call`] and a signature.
 #[derive(TypeInfo, Clone, PartialEq, Eq, Debug, serde::Serialize, serde::Deserialize)]
 struct SignedExtrinsic {
 	function: Call,

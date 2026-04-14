@@ -9,8 +9,8 @@ parity-scale-codec = { version = "3.0.0", default-features = false, features = [
 ] }
 scale-info = { version = "2.6.0", default-features = false }
 log = { version = "0.4.14" }
-hex-literal = { version = "0.4.1" }
-docify = "0.2.7"
+hex-literal = { version = "1.1.0" }
+docify = "0.2.9"
 serde = { version = "1.0.130", default-features = false, features = ["derive"] }
 serde_json = { version = "1.0.111", default-features = false, features = [
 	"alloc",
@@ -34,8 +34,9 @@ sp-genesis-builder = { version = "0.12.0", default-features = false }
 
 simple-mermaid = { version = "0.1.1" }
 
-# Pin base64ct to avoid edition2024 requirement
+# Pin crates that require newer rustc than our toolchain
 base64ct = "=1.6.0"
+psm = "=0.1.25"
 
 [build-dependencies]
 substrate-wasm-builder = { version = "22.0.0", optional = true }
