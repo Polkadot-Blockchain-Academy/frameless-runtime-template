@@ -51,6 +51,12 @@
 //! cargo install staging-chain-spec-builder --locked
 //! ```
 //!
+//! Or, if having issues with `polkadot-omni-node`, use:
+//!
+//! ```
+//! cargo install --git https://github.com/kianenigma/pba-omni-node --force --locked
+//! ```
+//!
 //! Then build the Wasm runtime:
 //!
 //! ```bash
@@ -83,6 +89,17 @@
 //! 	--dev-block-time 6000 \
 //! 	--tmp
 //! ```
+//!
+//! If using the custom omni-node, use:
+//!
+//! ```bash
+//! pba-omni-node \
+//! 	--chain ./chain_spec.json \
+//! 	--consensus manual-seal-6000 \
+//! 	--tmp
+//! ```
+//!
+//! (notice how the `--dev-block-time` is a bit different here)
 //!
 //! This will launch your chain with no initial state, yay! Try reading a few keys from the state
 //! now:
